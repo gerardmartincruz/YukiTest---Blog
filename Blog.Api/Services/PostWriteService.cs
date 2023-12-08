@@ -14,12 +14,14 @@ namespace Blog.Services
 
         public async Task CreatePostWithAuthor(Post post)
         {
+            if (post is null)
+            {
+                throw new ArgumentNullException("Post can't be null");
+            }
+
             try
             {
-                // _context.Author.Add(post.Author);
-                //await _context.SaveChangesAsync();
-
-                _context.Post.Add(post);
+                await _context.Post.AddAsync(post);
                 await _context.SaveChangesAsync();
             }
             catch (Exception e)
@@ -31,6 +33,11 @@ namespace Blog.Services
         
         public async Task CreatePostWithoutAuthor(Post post)
         {
+            if (post is null)
+            {
+                throw new ArgumentNullException("Post can't be null");
+            }
+
             try
             {
                 await _context.Post.AddAsync(post);

@@ -18,8 +18,12 @@ internal class Program
         builder.Services.AddSwaggerGen();
         builder.Services.AddLogging();
 
-        builder.Services.AddDbContext<BlogContext>(options =>
-            options.UseInMemoryDatabase("BlogInMemoryDatabase"));
+        if (builder.Environment.IsDevelopment())
+            builder.Services.AddDbContext<BlogContext>(options =>
+                options.UseInMemoryDatabase("BlogInMemoryDatabase"));
+        else
+            builder.Services.AddDbContext<BlogContext>(options =>
+                options.UseSqlServer(blogDbConnectionString));
 
         builder.Services.AddScoped<IPostReadService, PostReadService>();
         builder.Services.AddScoped<IPostWriteService, PostWriteService>();
@@ -27,14 +31,12 @@ internal class Program
 
         var app = builder.Build();
 
-        //add data during app startup
-        using var scope = app.Services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<BlogContext>();
-        dbContext.InitializeData();
-
-        // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
+            //add data during app startup
+            using var scope = app.Services.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<BlogContext>();
+            dbContext.InitializeData();
             app.UseSwagger();
             app.UseSwaggerUI();
         }
@@ -43,15 +45,19 @@ internal class Program
 
         app.MapGet("/post/{id:int}", (int id, bool? includeAuthor, IPostReadService readService, ILogger<IPostWriteService> logger) =>
         {
-
-            if ((includeAuthor != null) && includeAuthor == true)
+            try
             {
-                return readService.GetPostWithAuthor(id);
+                if ((includeAuthor != null) && includeAuthor == true)
+                    return readService.GetPostWithAuthor(id);
+                else
+                    return readService.GetPostWithoutAuthor(id);
             }
-            else
+            catch (Exception ex)
             {
-                return readService.GetPostWithoutAuthor(id);
+                logger.LogError(ex.Message, ex);
+                throw new Exception("Somethig wen wrong");
             }
+            
             
         }).AddEndpointFilter<ContentFilter>();
 
