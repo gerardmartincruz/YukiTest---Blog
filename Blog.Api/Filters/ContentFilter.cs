@@ -47,10 +47,15 @@ namespace Blog.Filters
                     return "Content not supported";
                 }
             }
+            catch (InvalidOperationException  e)
+            {
+                _logger.LogError(e.Message, e);
+                return "Oops the post you're searching for is not available";
+            }
             catch (Exception e)
             {
                 _logger.LogError(e.Message, e);
-                return "something went wrong";
+                return "Oops something went wrong";
             }
 
             
